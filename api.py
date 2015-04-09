@@ -25,7 +25,9 @@ def verify_address(address_dictionary):
     r = requests.post('http://api.how2doit.de/services/addressverification/', data=json.dumps(address_dictionary, default=date_handler), headers=headers)
     #print address_dictionary
     #print r
-    return r.json()
+    js = r.json()
+
+    return js
 
 def verify_freemail(email):
     if len(email) == 0:
@@ -33,16 +35,22 @@ def verify_freemail(email):
     else:
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         r = requests.get('http://api.how2doit.de/services/freemail/%s/' %(email), headers=headers)
-    #print address_dictionary
-    #print r
         try:
             return r.json()
-        except:
+        except Exception as e:
             return {}
+
 def parse_whois(payload):
     try:
-        return parse.parse_raw_whois([payload])
+        js = parse.parse_raw_whois([payload])
+        if 'raw' in js:
+            del js['raw']
+        return js
     except KeyError:
+        print "KEYERROR!"
+        return {}
+    except ValueError:
+        print "VALUEERROR"
         return {}
 def check_vt_domain(domain):
     vt_api_key = '592d5f6cfb52135f48e9f2a9720631f7e3023efe8bad8b18961fb7af480e76c0'
