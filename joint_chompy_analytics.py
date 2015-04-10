@@ -1,6 +1,7 @@
 import ujson
 import api
 import numpy
+import itertools
 """
 [{"status": "completed", "analysis_id": "be0a9ebf-8cd1-4895-a3eb-63fed8ccdef0", "finish_date": "2015-03-12 19:15:51.819539", "service_name": "chompy", "object_type": "Domain", "distributed": false,
 "results": [{"Authoritive Nameserver": "ns1.qhoster.net., ns2.qhoster.net., ns4.qhoster.net., ns3.qhoster.net.", "subtype": "DNS Summary", "result": "garagemapp.com", "Date": "2015-03-12 19:15:50.554718",
@@ -35,6 +36,7 @@ if __name__ == '__main__':
                             result[ty] = 1
 
                     if element['result'] == 'Raw':
+                        # We'll do a flatten() on this, as manually extracting the data will be painful.
                         result['parsed_whois'] = api.parse_whois(element.get('Value', {}))
                         result['raw_whois_len'] = len(element.get('Value', {}))
                         """
@@ -62,10 +64,12 @@ if __name__ == '__main__':
                         a_asns = result.get('a_asns', [])
                         a_asns.append(asn.get('asn', None))
                         result['a_asns'] = a_asns
-                        # total num peers, as well as average, mean peers per A record asn.
                         asn_peers = result.get('num_asn_peers', [])
                         asn_peers.append(asn.get('as_peers', []))
                         result['num_asn_peers'] = asn_peers
+                        result['total_unique_peers'] = len(set(itertools.chain.from_iterable(asn_peers)))
+                        result['median_peers_per_asn'] = numpy.median([len(item) for item in asn_peers])
+                        result['mean_peers_per_asn'] = numpy.mean([len(item) for item in asn_peers])
 
             if e['service_name'] == "virustotal_lookup":
                 pdns_a_records = 0
@@ -94,6 +98,7 @@ if __name__ == '__main__':
                             detected_communicating_scores = numpy.append(detected_communicating_scores, float(item["positives"])/float(item['total']))
                         else:
                             detected_communicating_scores = numpy.append(detected_communicating_scores, float(item["positives"])/float(55))
+                #Need a NAN conversion function. -1 for NAN?
                 result['pdns_a_records'] = pdns_a_records
                 result['total_urls'] = total_urls
                 result['num_url_scores'] = len(url_scores)
