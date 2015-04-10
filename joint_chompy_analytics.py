@@ -52,7 +52,8 @@ if __name__ == '__main__':
                                 result[email_key] = api.verify_freemail(contact.get('email', ''))
                         """
                     if element['subtype'] == 'A':
-                        # total_num, ttl oddity, number of asns, asn/ip ratio, ttl/ip ratio? num unique ttls?
+                        # total_num, ttl oddity, asn/ip ratio, ttl/ip ratio? num unique ttls?
+                        # these calculations should be outside the for loop.
                         result['total_a_records'] = e.get('total_a_records', 0) + 1
                         dns = element.get('DNS', {})
                         asn = element.get('ASN', {})
@@ -99,6 +100,7 @@ if __name__ == '__main__':
                         else:
                             detected_communicating_scores = numpy.append(detected_communicating_scores, float(item["positives"])/float(55))
                 #Need a NAN conversion function. -1 for NAN?
+                # These calculations should be outside the forloop, as a part of the emit routine. 
                 result['pdns_a_records'] = pdns_a_records
                 result['total_urls'] = total_urls
                 result['num_url_scores'] = len(url_scores)
