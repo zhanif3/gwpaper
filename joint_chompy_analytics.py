@@ -52,16 +52,20 @@ if __name__ == '__main__':
                     if element['subtype'] == 'A':
                         # total_num, ttl oddity, number of asns, asn/ip ratio, ttl/ip ratio? num unique ttls?
                         result['total_a_records'] = e.get('total_a_records', 0) + 1
-                        #average TTL
-                        
-                        if e.get('a_ttls', []) is not None:
-                            result['a_ttls'] = e.get('a_ttls', []).append(element.get('ttl', -1))
-                        if e.get('a_asns', []) is not None:
-                            if len(element.get('ASN', [])) > 0:
-                                result['a_asns'] = e.get('a_asns', []).append(element.get('ASN', {}).get('asn', None))
-                        if e.get('num_asn_peers', 0) is not None:
-                            if len(element.get('ASN', [])) > 0:
-                                result['num_asn_peers'] = e.get('num_asn_peers', 0) + len(element.get('ASN', {}).get('as_peers', []))
+                        dns = element.get('DNS', {})
+                        asn = element.get('ASN', {})
+
+                        a_ttls = result.get('a_ttls', [])
+                        a_ttls.append(dns.get('ttl', -1))
+                        result['a_ttls'] = a_ttls
+
+                        a_asns = result.get('a_asns', [])
+                        a_asns.append(asn.get('asn', None))
+                        result['a_asns'] = a_asns
+                        # total num peers, as well as average, mean peers per A record asn.
+                        asn_peers = result.get('num_asn_peers', [])
+                        asn_peers.append(asn.get('as_peers', []))
+                        result['num_asn_peers'] = asn_peers
 
             if e['service_name'] == "virustotal_lookup":
                 pdns_a_records = 0
@@ -90,3 +94,15 @@ if __name__ == '__main__':
                             detected_communicating_scores = numpy.append(detected_communicating_scores, float(item["positives"])/float(item['total']))
                         else:
                             detected_communicating_scores = numpy.append(detected_communicating_scores, float(item["positives"])/float(55))
+                result['pdns_a_records'] = pdns_a_records
+                result['total_urls'] = total_urls
+                result['num_url_scores'] = len(url_scores)
+                result['num_detected_communicating_scores'] = len(detected_communicating_scores)
+                result['num_detected_downloaded_scores'] = len(detected_downloaded_scores)
+                result['mean_url_scores'] = numpy.mean(url_scores)
+                result['mean_detected_communicating_scores'] = numpy.mean(detected_communicating_scores)
+                result['mean_detected_downloaded_scores'] = numpy.mean(detected_downloaded_scores)
+                result['median_url_scores'] = numpy.median(url_scores)
+                result['median_detected_communicating_scores'] = numpy.median(detected_communicating_scores)
+                result['median_detected_downloaded_scores'] = numpy.median(detected_downloaded_scores)
+        #print result
