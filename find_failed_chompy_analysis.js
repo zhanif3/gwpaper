@@ -7,6 +7,7 @@ cursor = db.analysis_results.find(
 		analyst: { $in: ["ingest", "maltrieve"]}
 	}, 
 	{
+                _id: 0,
 		object_id: 1, 
 		status: 1, 
 		analyst: 1
