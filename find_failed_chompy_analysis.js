@@ -1,10 +1,10 @@
+// mongo localhost:27017/crits --quiet find_failed_chompy_analysis.js > out.txt
 
 cursor = db.analysis_results.find( 
 	{
 		service_name: "chompy", 
 		status: { $in: ["error", "started"]}, 
-		analyst: { $in: ["ingest", "maltrieve"]}, 
-		results: []
+		analyst: { $in: ["ingest", "maltrieve"]}
 	}, 
 	{
 		object_id: 1, 
@@ -13,8 +13,6 @@ cursor = db.analysis_results.find(
 	} 
 );
 
-print(cursor.count())
-
 while(cursor.hasNext()) {
-	printjson(cursor.next());
+	printjsononeline(cursor.next());
 }
