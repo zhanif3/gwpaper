@@ -4,10 +4,10 @@ cursor = db.analysis_results.find(
 	{
 		service_name: "chompy", 
 		status: { $in: ["error", "started"]}, 
-		analyst: { $in: ["ingest", "maltrieve"]}
+		analyst: { $in: ["ingest", "maltrieve"]},
 	}, 
 	{
-                _id: 0,
+        _id: 0,
 		object_id: 1, 
 		status: 1, 
 		analyst: 1
