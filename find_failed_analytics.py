@@ -19,6 +19,6 @@ for service in services.find(service_query):
     
     sample = samples.find_one( {"_id": service["_id"]} )
     if sample['source.name'] == 'skald_test':
-        count = count +1
+        count = count + 1
 
 print(count)
