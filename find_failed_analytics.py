@@ -30,9 +30,9 @@ for analysis in analysis_results.find(service_query):
     sample = samples.find_one( {"_id": ObjectId(analysis["object_id"])} )
     try:
         if sample['source'][0]['name'] == "skald_test":
-            date = datetime.strptime(analysis['start_date'], fmt)
+            date = datetime.strptime(analysis['start_date'], FMT)
             if START_DATE <= date and END_DATE >= date:
-                if service['status'] == 'started':
+                if analysis['status'] == 'started':
                     count['started'] = count['started'] + 1
                 elif analysis["service_name"] == "virustotal_lookup":
                     count['error']['vt'] = count['error']['vt'] + 1
@@ -43,6 +43,8 @@ for analysis in analysis_results.find(service_query):
                 else:
                     print(analysis)
 
+    except TypeError:
+        pass
     except:
         print(sys.exc_info())
 
