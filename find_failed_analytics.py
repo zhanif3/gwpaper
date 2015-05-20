@@ -6,8 +6,6 @@ FMT = '%Y-%m-%d %H:%M:%S.%f'
 START_DATE = datetime(2015, 5, 18, 9)
 END_DATE = datetime(2015, 5, 19, 9)
 
-date = datetime.strptime("2014-12-14 18:04:41.082696", fmt)
-
 client = MongoClient()
 
 db = client['crits']
