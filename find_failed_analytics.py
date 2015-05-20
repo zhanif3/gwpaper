@@ -1,22 +1,43 @@
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 client = MongoClient()
 
 db = client['crits']
-services = db['services']
+analysis_results = db['analysis_results']
 samples = db['sample']
 
 service_query = {
     "service_name": { "$in": ["virustotal_lookup", "yara", "peinfo"] },
-    "status": "started"
-}
-sample_query = {
-    "source.name": "skald_test"
+    "status": { "$in": ["started", "error"] },
+    "object_type": "Sample"
 }
 
-count = 0
-for service in services.find(service_query):
-    sample = samples.find( {"_id": service["_id"]} )
-    if sample['source.name'] == "skald_test":
-        count = count + 1
+count = {
+	"started": 0,
+	"error": {
+	    'vt': 0,
+	    'yara': 0,
+	    'peinfo': 0}
+}
+for analysis in analysis_results.find(service_query):
+    sample = samples.find_one( {"_id": ObjectId(analysis["object_id"])} )
+    try:
+	    if sample['source'][0]['name'] == "skald_test":
+	    	date = datetime.strptime(analysis['start_date'])
+	    	print(date)
+	    	if datetime.datetime(2015, 5, 18) < date:
+		        if service['status'] == 'started':
+	                count['started'] = count['started'] + 1
+	            elif analysis["service_name"] == "virustotal_lookup":
+	                count['error']['vt'] = count['error']['vt'] + 1
+	            elif analysis["service_name"] == "yara":
+	            	count['error']['yara'] = count['error']['yara'] + 1
+	            elif analysis["service_name"] == "peinfo":
+	            	count['error']['peinfo'] = count['error']['peinfo'] + 1
+	            else:
+	            	print(analysis)
+
+	except:
+		print('ignore')
 
 print(count)
