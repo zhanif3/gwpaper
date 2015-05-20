@@ -1,5 +1,13 @@
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from datetime import datetime
+
+FMT = '%Y-%m-%d %H:%M:%S.%f'
+START_DATE = datetime(2015, 5, 18, 9)
+END_DATE = datetime(2015, 5, 19, 9)
+
+date = datetime.strptime("2014-12-14 18:04:41.082696", fmt)
+
 client = MongoClient()
 
 db = client['crits']
@@ -23,9 +31,8 @@ for analysis in analysis_results.find(service_query):
     sample = samples.find_one( {"_id": ObjectId(analysis["object_id"])} )
     try:
 	    if sample['source'][0]['name'] == "skald_test":
-	    	date = datetime.strptime(analysis['start_date'])
-	    	print(date)
-	    	if datetime.datetime(2015, 5, 18) < date:
+	    	date = datetime.strptime(analysis['start_date'], fmt)
+	    	if START_DATE <= date and END_DATE >= date:
 		        if service['status'] == 'started':
 	                count['started'] = count['started'] + 1
 	            elif analysis["service_name"] == "virustotal_lookup":
