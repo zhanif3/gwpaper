@@ -4,8 +4,21 @@ from bson.objectid import ObjectId
 from datetime import datetime
 
 FMT = '%Y-%m-%d %H:%M:%S.%f'
-START_DATE = datetime(2015, 5, 18, 9)
-END_DATE = datetime(2015, 5, 19, 9)
+# 1k:
+START_DATE = datetime(2015, 5, 19, 0, 16)
+END_DATE = datetime(2015, 5, 19, 1, 10) #rounded up from (2015, 5, 19, 1, 3)
+
+# 5k
+#START_DATE = datetime(2015, 5, 19, 1, 14)
+#END_DATE = datetime(2015, 5, 19, 6, 0) #rounded up from (2015, 5, 19, 5, 39)
+
+# 10k
+#START_DATE = datetime(2015, 5, 19, 12, 55)
+#END_DATE = datetime(2015, 5, 19, 23, 0) #rounded up from (2015, 5, 19, 22, 19)
+
+# 50k
+#START_DATE = datetime(2015, 5, 20, 3, 30)
+######END_DATE = datetime(2015, 5, 20, 22, 30)
 
 client = MongoClient()
 
