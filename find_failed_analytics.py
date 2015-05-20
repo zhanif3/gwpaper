@@ -1,3 +1,4 @@
+import sys
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime
@@ -43,6 +44,6 @@ for analysis in analysis_results.find(service_query):
                     print(analysis)
 
     except:
-        print('ignore')
+        print(sys.exc_info())
 
 print(count)
