@@ -51,6 +51,14 @@ if __name__ == '__main__':
         js = ujson.loads(line)
         result = {}
 
+# We might need to change this to do a look up on the TLO (Domain) and then pull the chompy and VT analysis_results
+# This way we can limit my the Domains Source. For example we have benign, maltrieve droppers, and then novetta which
+# should be call out Domains
+
+# 
+# I am going to update the chompy_analytics.py file to limit my source. 
+#
+
         for e in js:
             if e['service_name'] == 'chompy':
                 for element in e['results']:
