@@ -21,7 +21,7 @@ analysis_query = {
 
 # Helper for finding TLO with the sources we care about. 
 sample_query = {
-	"source.name": { "$in": ["maltrieve", "novetta", "benign"] }
+    "source.name": { "$in": ["maltrieve", "novetta", "benign"] }
 }
 
 keyset = set()
@@ -69,18 +69,18 @@ def emit(result, fields):
 
 if __name__ == '__main__':
 
-	# I am moving through the analysis results first as they will be fewer
-	# the way the data is stored also makes this easier to link back to an obj_ID
-	for analysis in analysis_results.find(analysis_query):
+    # I am moving through the analysis results first as they will be fewer
+    # the way the data is stored also makes this easier to link back to an obj_ID
+    for analysis in analysis_results.find(analysis_query):
 
-		# Check to see if we care about that sample based on its source. 
-	    sample = samples.find_one( sample_query.update( {"_id": ObjectId(analysis["object_id"])}) )
-	    if sample:
-	    	# Found a sample we care about so begin feature extraction
-		    result = {}
-		    try:
-		    	for element in analysis['results']:
-		    		# Pull DNS Summary information
+        # Check to see if we care about that sample based on its source. 
+        sample = samples.find_one( sample_query.update( {"_id": ObjectId(analysis["object_id"])}) )
+        if sample:
+            # Found a sample we care about so begin feature extraction
+            result = {}
+            try:
+                for element in analysis['results']:
+                    # Pull DNS Summary information
                         if element['subtype'] == "DNS Summary":
                         result['domain'] = element['result']
                         result['domain_length'] = len(element['result'])
@@ -127,9 +127,9 @@ if __name__ == '__main__':
                             if contact is not None:
                                 result[email_key] = api.verify_freemail(contact.get('email', ''))
 
-		    except TypeError:
-		        pass
-		    except:
-		        print(sys.exc_info())
+            except TypeError:
+                pass
+            except:
+                print(sys.exc_info())
 
             print emit(result, fields_to_write)
