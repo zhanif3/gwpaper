@@ -66,7 +66,7 @@ def emit(result, fields):
         if math.isnan(dat):
             dat = field+"NAN"
         output.append(dat)
-    return output, result['domain']
+    return output, result['domain'], result['source']
 
 
 if __name__ == '__main__':
