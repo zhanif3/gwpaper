@@ -81,7 +81,7 @@ if __name__ == '__main__':
             try:
                 for element in analysis['results']:
                     # Pull DNS Summary information
-                        if element['subtype'] == "DNS Summary":
+                    if element['subtype'] == "DNS Summary":
                         result['domain'] = element['result']
                         result['domain_length'] = len(element['result'])
 
