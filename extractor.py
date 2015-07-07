@@ -12,7 +12,7 @@ client = MongoClient()
 
 db = client['crits']
 analysis_collection = db['analysis_results']
-sample_collection = db['sample']
+sample_collection = db['domains']
 
 # Helper dictionary for finding chompy analysis 
 analysis_query = {
@@ -74,14 +74,24 @@ if __name__ == '__main__':
     # I am moving through the analysis results first as they will be fewer
     # the way the data is stored also makes this easier to link back to an obj_ID
     for analysis in analysis_collection.find(analysis_query):
+        result = {}
 
         # Check to see if we care about that sample based on its source. 
-        sample = sample_collection.find_one( sample_query.update( {"_id": ObjectId(analysis["object_id"])}) )
-        if sample:
+        sample = sample_collection.find_one( {"_id": ObjectId(analysis["object_id"])} )
+        if sample['source'][0]['name'] == 'benign':
+            result['source'] = 'benign'
+        elif sample['source'][0]['name'] == 'maltrieve':
+            result['source'] = 'maltrieve'
+        elif sample['source'][0]['name'] == 'novetta':
+            result['source'] = 'novetta'
+        else:
+            break
             # Found a sample we care about so begin feature extraction
-            result = {}
+            
             try:
                 for element in analysis['results']:
+
+
                     # Pull DNS Summary information
                     if element['subtype'] == "DNS Summary":
                         result['domain'] = element['result']
