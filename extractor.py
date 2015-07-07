@@ -71,10 +71,10 @@ if __name__ == '__main__':
 
     # I am moving through the analysis results first as they will be fewer
     # the way the data is stored also makes this easier to link back to an obj_ID
-    for analysis in analysis_results.find(analysis_query):
+    for analysis in analysis_collection.find(analysis_query):
 
         # Check to see if we care about that sample based on its source. 
-        sample = samples.find_one( sample_query.update( {"_id": ObjectId(analysis["object_id"])}) )
+        sample = sample_collection.find_one( sample_query.update( {"_id": ObjectId(analysis["object_id"])}) )
         if sample:
             # Found a sample we care about so begin feature extraction
             result = {}
