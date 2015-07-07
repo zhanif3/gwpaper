@@ -85,63 +85,63 @@ if __name__ == '__main__':
         elif sample['source'][0]['name'] == 'novetta':
             result['source'] = 'novetta'
         else:
-            break
+            continue
             # Found a sample we care about so begin feature extraction
             
-            try:
-                for element in analysis['results']:
+        try:
+            for element in analysis['results']:
 
 
-                    # Pull DNS Summary information
-                    if element['subtype'] == "DNS Summary":
-                        result['domain'] = element['result']
-                        result['domain_length'] = len(element['result'])
+                # Pull DNS Summary information
+                if element['subtype'] == "DNS Summary":
+                    result['domain'] = element['result']
+                    result['domain_length'] = len(element['result'])
 
-                        record_types = element.get('Record Contains', "").split(',')
-                        print record_types
-                        result['num_record_types'] = len(record_types)
-                        for ty in record_types:
-                            result[ty.strip()] = 1
+                    record_types = element.get('Record Contains', "").split(',')
+                    print record_types
+                    result['num_record_types'] = len(record_types)
+                    for ty in record_types:
+                        result[ty.strip()] = 1
 
-                    #Pull A record and attached ASN information
-                    if element['subtype'] == 'A':
-                        result['total_a_records'] = result.get('total_a_records', 0) + 1
-                        dns = element.get('DNS', {})
-                        asn = element.get('ASN', {})
+                #Pull A record and attached ASN information
+                if element['subtype'] == 'A':
+                    result['total_a_records'] = result.get('total_a_records', 0) + 1
+                    dns = element.get('DNS', {})
+                    asn = element.get('ASN', {})
 
-                        a_ttls = result.get('a_ttls', [])
-                        a_ttls.append(dns.get('ttl', -1))
-                        result['a_ttls'] = a_ttls
-                        a_asns = result.get('a_asns', [])
+                    a_ttls = result.get('a_ttls', [])
+                    a_ttls.append(dns.get('ttl', -1))
+                    result['a_ttls'] = a_ttls
+                    a_asns = result.get('a_asns', [])
 
-                        if isinstance(asn, list):
-                            asn = {}
+                    if isinstance(asn, list):
+                        asn = {}
 
-                        a_asns.append(asn.get('asn', None))
-                        result['a_asns'] = a_asns
-                        asn_peers = result.get('asn_peers', [])
-                        asn_peers.append(asn.get('as_peers', []))
-                        result['asn_peers'] = asn_peers
+                    a_asns.append(asn.get('asn', None))
+                    result['a_asns'] = a_asns
+                    asn_peers = result.get('asn_peers', [])
+                    asn_peers.append(asn.get('as_peers', []))
+                    result['asn_peers'] = asn_peers
 
-                    if element['result'] == 'Raw':
-                        # We'll do a flatten() on this, as manually extracting the data will be painful.
-                        result['parsed_whois'] = api.parse_whois(element.get('Value', {}))
-                        result['raw_whois_len'] = len(element.get('Value', {}))
+                if element['result'] == 'Raw':
+                    # We'll do a flatten() on this, as manually extracting the data will be painful.
+                    result['parsed_whois'] = api.parse_whois(element.get('Value', {}))
+                    result['raw_whois_len'] = len(element.get('Value', {}))
 
-                        for contact_type in result.get('parsed_whois', {}).get('contacts', []):
-                            key = '%s_address_verification' % (contact_type)
-                            v = api.verify_address(result['parsed_whois']['contacts'][contact_type])
-                            if "error" not in v:
-                                result[key] = v
+                    for contact_type in result.get('parsed_whois', {}).get('contacts', []):
+                        key = '%s_address_verification' % (contact_type)
+                        v = api.verify_address(result['parsed_whois']['contacts'][contact_type])
+                        if "error" not in v:
+                            result[key] = v
 
-                            email_key = '%s_freemail_verification' % (contact_type)
-                            contact = result.get('parsed_whois', {}).get('contacts', {}).get(contact_type, {})
-                            if contact is not None:
-                                result[email_key] = api.verify_freemail(contact.get('email', ''))
+                        email_key = '%s_freemail_verification' % (contact_type)
+                        contact = result.get('parsed_whois', {}).get('contacts', {}).get(contact_type, {})
+                        if contact is not None:
+                            result[email_key] = api.verify_freemail(contact.get('email', ''))
 
-            except TypeError:
-                pass
-            except:
-                print(sys.exc_info())
+        except TypeError:
+            pass
+        except:
+            print(sys.exc_info())
 
-            print emit(result, fields_to_write)
+        print emit(result, fields_to_write)
