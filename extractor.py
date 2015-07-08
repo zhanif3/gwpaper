@@ -97,21 +97,21 @@ def main():
     # the way the data is stored also makes this easier to link back to an
     # obj_ID
     for analysis in analysis_collection.find(analysis_query):
-        result = {}
+        result = dict()
 
         # Check to see if we care about that sample based on its source.
-        sample = sample_collection.find_one(
-            {"_id": ObjectId(analysis["object_id"])})
+        sample = sample_collection.find_one({
+            "_id": ObjectId(analysis["object_id"])
+        })
 
-        if sample['source'][0]['name'] == 'benign':
-            result['source'] = 'benign'
-        elif sample['source'][0]['name'] == 'maltrieve':
-            result['source'] = 'maltrieve'
-        elif sample['source'][0]['name'] == 'novetta':
-            result['source'] = 'novetta'
+        source_name = sample["source"][0]["name"]
+        if source_name in {"benign", "maltrieve", "novetta"}:
+            result["source"] = source_name
         else:
+            # this sample isn't interesting for us
             continue
-            # Found a sample we care about so begin feature extraction
+
+        # Found a sample we care about so begin feature extraction
         try:
             for element in analysis['results']:
                 # Pull DNS Summary information
@@ -126,7 +126,7 @@ def main():
                         result[ty.strip()] = 1
 
                 # Pull A record and attached ASN information
-                if element['subtype'] == 'A':
+                elif element['subtype'] == 'A':
                     result['total_a_records'] = result.get('total_a_records', 0) + 1
                     dns = element.get('DNS', {})
                     asn = element.get('ASN', {})
@@ -164,7 +164,7 @@ def main():
         except TypeError:
             pass
         except Exception as _:
-            print((sys.exc_info()))
+            print(sys.exc_info())
 
         print(emit(result, fields_to_write))
 
