@@ -69,7 +69,7 @@ if __name__ == '__main__':
                         result['domain_length'] = len(element['result'])
 
                         record_types = element.get('Record Contains', "").split(',')
-                        print record_types
+                        print(record_types)
                         result['num_record_types'] = len(record_types)
                         for ty in record_types:
                             result[ty.strip()] = 1
@@ -149,4 +149,4 @@ if __name__ == '__main__':
                 result['median_url_scores'] = numpy.median(url_scores)
                 result['median_detected_communicating_scores'] = numpy.median(detected_communicating_scores)
                 result['median_detected_downloaded_scores'] = numpy.median(detected_downloaded_scores)
-        print emit(result, fields_to_write)
+        print(emit(result, fields_to_write))

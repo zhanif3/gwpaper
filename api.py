@@ -47,10 +47,10 @@ def parse_whois(payload):
             del js['raw']
         return js
     except KeyError:
-        print "KEYERROR!"
+        print("KEYERROR!")
         return {}
     except ValueError:
-        print "VALUEERROR"
+        print("VALUEERROR")
         return {}
         
 def check_vt_domain(domain):
@@ -63,7 +63,7 @@ def check_vt_domain(domain):
           }
 
     response = requests.get(url, params=params)
-    print response.text
+    print(response.text)
     return response.json()
 
 def check_vt_ip(ipaddr):
@@ -80,4 +80,4 @@ def check_vt_ip(ipaddr):
 if __name__ == '__main__':
     #print len(check_vt_ip('8.8.8.8')['detected_urls']) #['response_code']
     #print numpy.mean(numpy.array([line['positives'] for line in check_vt_domain('google.com')['detected_urls']]))
-    print verify_freemail('zh4990@gmail.com')
+    print(verify_freemail('zh4990@gmail.com'))
