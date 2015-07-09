@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import itertools
 import logging
@@ -155,9 +157,10 @@ def analyze(analysis):
                         result[email_key] = api.verify_freemail(contact.get('email', ''))
 
     except TypeError:
-        logging.error("type error!")
+        logging.error("type error when gathering database values!")
     except Exception as _:
-        logging.error(sys.exc_info())
+        logging.error(("exception when gathering "
+                       " database values:\n{}".format(sys.exc_info())))
 
     data_result = emit(result)
     with file_write_lock:
@@ -179,14 +182,20 @@ def main():
 
     args = cmd.parse_args()
 
+    # set logging format and level
     logging.basicConfig(format='%(asctime)s => %(levelname)s: %(message)s',
                         level=logging.INFO)
 
+    # silence requests-messages
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+    # the database client
     client = MongoClient()
 
+    # connect to databases
     db = client['crits']
     analysis_collection = db['analysis_results']
-    # set global variable:
     sample_collection = db['domains']
 
     # Helper dictionary for finding chompy analysis
