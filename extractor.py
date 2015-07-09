@@ -1,12 +1,35 @@
-import api
+import argparse
 import itertools
+import logging
 import math
+import multiprocessing
 import numpy
 import sys
+
+import api
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from multiprocessing import Pool, Lock
 
-def emit(result, fields):
+FIELDS_TO_WRITE = ['NS', 'A', 'SOA', 'MX', 'TXT', "total_a_records",
+                   "num_asn_peers", "total_unique_peers",
+                   "median_peers_per_asn", "mean_peers_per_asn mean_ttl",
+                   "median_ttl", "total_unique_ttls",
+                   "num_contacts subdomains", "asn_ip_ratio",
+                   "asn_peer_ip_ratio", 'domain_length',
+                   'num_record_types', 'raw_whois_len', 'total_a_records',
+                   'pdns_a_records', 'total_urls', 'num_url_scores',
+                   'num_detected_communicating_scores',
+                   'num_detected_downloaded_scores', 'mean_url_scores',
+                   'mean_detected_communicating_scores',
+                   'mean_detected_downloaded_scores', 'median_url_scores',
+                   'median_detected_communicating_scores',
+                   'median_detected_downloaded_scores']
+
+
+
+def emit(result):
+    fields = FIELDS_TO_WRITE
     output = []
     asn_peers = result.get('asn_peers', [])
     result['num_asn_peers'] = len(list(itertools.chain.from_iterable(asn_peers)))
@@ -54,14 +77,116 @@ def emit(result, fields):
             dat = field+"NAN"
         output.append(dat)
 
-    return output, result['domain'], result['source']
+    return (output, result['domain'], result['source'])
+
+
+# normally i'm totally against any global variables
+# but the multiprocessing serialization forces me to
+file_write_lock = Lock()
+sample_collection = None
+output_file = None
+
+
+def analyze(analysis):
+    global sample_collection
+    global output_file
+
+    result = dict()
+
+    # Check to see if we care about that sample based on its source.
+    sample = sample_collection.find_one({
+        "_id": ObjectId(analysis["object_id"])
+    })
+
+    source_name = sample["source"][0]["name"]
+    if source_name in {"benign", "maltrieve", "novetta"}:
+        result["source"] = source_name
+    else:
+        # this sample isn't interesting for us
+        return
+
+    # Found a sample we care about so begin feature extraction
+    try:
+        for element in analysis['results']:
+            # Pull DNS Summary information
+            if element['subtype'] == "DNS Summary":
+                result['domain'] = element['result']
+                result['domain_length'] = len(element['result'])
+
+                record_types = element.get('Record Contains', "").split(',')
+                logging.info("record types: {}".format(record_types))
+                result['num_record_types'] = len(record_types)
+                result.update({k.strip(): 1 for k in record_types})
+
+            # Pull A record and attached ASN information
+            elif element['subtype'] == 'A':
+                result['total_a_records'] = result.get('total_a_records', 0) + 1
+                dns = element.get('DNS', {})
+                asn = element.get('ASN', {})
+
+                a_ttls = result.get('a_ttls', [])
+                a_ttls.append(dns.get('ttl', -1))
+                result['a_ttls'] = a_ttls
+                a_asns = result.get('a_asns', [])
+
+                if isinstance(asn, list):
+                    asn = dict()
+
+                a_asns.append(asn.get('asn', None))
+                result['a_asns'] = a_asns
+                asn_peers = result.get('asn_peers', [])
+                asn_peers.append(asn.get('as_peers', []))
+                result['asn_peers'] = asn_peers
+
+            if element['result'] == 'Raw':
+                # We'll do a flatten() on this, as manually extracting the data will be painful.
+                result['parsed_whois'] = api.parse_whois(element.get('Value', {}))
+                result['raw_whois_len'] = len(element.get('Value', {}))
+
+                for contact_type in result.get('parsed_whois', {}).get('contacts', []):
+                    key = '%s_address_verification' % (contact_type)
+                    v = api.verify_address(result['parsed_whois']['contacts'][contact_type])
+                    if "error" not in v:
+                        result[key] = v
+
+                    email_key = '%s_freemail_verification' % (contact_type)
+                    contact = result.get('parsed_whois', {}).get('contacts', {}).get(contact_type, {})
+                    if contact is not None:
+                        result[email_key] = api.verify_freemail(contact.get('email', ''))
+
+    except TypeError:
+        logging.error("type error!")
+    except Exception as _:
+        logging.error(sys.exc_info())
+
+    data_result = emit(result)
+    with file_write_lock:
+        logging.info("data result: {}".format(data_result))
+        output_file.write("{}\n".format(data_result))
 
 
 def main():
+    global sample_collection
+    global output_file
+
+    cmd = argparse.ArgumentParser()
+    cmd.add_argument("output_file", type=argparse.FileType('w'),
+                     help="file where to write results in")
+    cmd.add_argument("--jobs", "-j", default=multiprocessing.cpu_count(),
+                     help="file where to write results in")
+    cmd.add_argument("--multiprocess", "-m", action="store_true",
+                     help="use multiple processes for parallelization")
+
+    args = cmd.parse_args()
+
+    logging.basicConfig(format='%(asctime)s => %(levelname)s: %(message)s',
+                        level=logging.INFO)
+
     client = MongoClient()
 
     db = client['crits']
     analysis_collection = db['analysis_results']
+    # set global variable:
     sample_collection = db['domains']
 
     # Helper dictionary for finding chompy analysis
@@ -78,95 +203,26 @@ def main():
         }
     }
 
-    fields_to_write = ['NS', 'A', 'SOA', 'MX', 'TXT', "total_a_records",
-                       "num_asn_peers", "total_unique_peers",
-                       "median_peers_per_asn", "mean_peers_per_asn mean_ttl",
-                       "median_ttl", "total_unique_ttls",
-                       "num_contacts subdomains", "asn_ip_ratio",
-                       "asn_peer_ip_ratio", 'domain_length',
-                       'num_record_types', 'raw_whois_len', 'total_a_records',
-                       'pdns_a_records', 'total_urls', 'num_url_scores',
-                       'num_detected_communicating_scores',
-                       'num_detected_downloaded_scores', 'mean_url_scores',
-                       'mean_detected_communicating_scores',
-                       'mean_detected_downloaded_scores', 'median_url_scores',
-                       'median_detected_communicating_scores',
-                       'median_detected_downloaded_scores']
 
     # I am moving through the analysis results first as they will be fewer
     # the way the data is stored also makes this easier to link back to an
     # obj_ID
-    for analysis in analysis_collection.find(analysis_query):
-        result = dict()
+    to_analyze = analysis_collection.find(analysis_query)
+    sample_count = to_analyze.count()
+    output_file = args.output_file
+    logging.info("will run over {} samples".format(sample_count))
 
-        # Check to see if we care about that sample based on its source.
-        sample = sample_collection.find_one({
-            "_id": ObjectId(analysis["object_id"])
-        })
+    if args.multiprocess:
+        logging.info("using multiprocessing")
+        with Pool(processes=args.jobs) as pool:
+            pool.map(analyze, to_analyze)
+            pool.close()
+            pool.join()
 
-        source_name = sample["source"][0]["name"]
-        if source_name in {"benign", "maltrieve", "novetta"}:
-            result["source"] = source_name
-        else:
-            # this sample isn't interesting for us
-            continue
-
-        # Found a sample we care about so begin feature extraction
-        try:
-            for element in analysis['results']:
-                # Pull DNS Summary information
-                if element['subtype'] == "DNS Summary":
-                    result['domain'] = element['result']
-                    result['domain_length'] = len(element['result'])
-
-                    record_types = element.get('Record Contains', "").split(',')
-                    print(record_types)
-                    result['num_record_types'] = len(record_types)
-                    for ty in record_types:
-                        result[ty.strip()] = 1
-
-                # Pull A record and attached ASN information
-                elif element['subtype'] == 'A':
-                    result['total_a_records'] = result.get('total_a_records', 0) + 1
-                    dns = element.get('DNS', {})
-                    asn = element.get('ASN', {})
-
-                    a_ttls = result.get('a_ttls', [])
-                    a_ttls.append(dns.get('ttl', -1))
-                    result['a_ttls'] = a_ttls
-                    a_asns = result.get('a_asns', [])
-
-                    if isinstance(asn, list):
-                        asn = {}
-
-                    a_asns.append(asn.get('asn', None))
-                    result['a_asns'] = a_asns
-                    asn_peers = result.get('asn_peers', [])
-                    asn_peers.append(asn.get('as_peers', []))
-                    result['asn_peers'] = asn_peers
-
-                if element['result'] == 'Raw':
-                    # We'll do a flatten() on this, as manually extracting the data will be painful.
-                    result['parsed_whois'] = api.parse_whois(element.get('Value', {}))
-                    result['raw_whois_len'] = len(element.get('Value', {}))
-
-                    for contact_type in result.get('parsed_whois', {}).get('contacts', []):
-                        key = '%s_address_verification' % (contact_type)
-                        v = api.verify_address(result['parsed_whois']['contacts'][contact_type])
-                        if "error" not in v:
-                            result[key] = v
-
-                        email_key = '%s_freemail_verification' % (contact_type)
-                        contact = result.get('parsed_whois', {}).get('contacts', {}).get(contact_type, {})
-                        if contact is not None:
-                            result[email_key] = api.verify_freemail(contact.get('email', ''))
-
-        except TypeError:
-            pass
-        except Exception as _:
-            print(sys.exc_info())
-
-        print(emit(result, fields_to_write))
+    else:
+        logging.info("using a single thread")
+        for v in to_analyze:
+            analyze(v)
 
 
 if __name__ == '__main__':
