@@ -46,6 +46,8 @@ def emit(result, fields):
             dat = field+"NAN"
         output.append(dat)
     return output, result['domain']
+
+    
 if __name__ == '__main__':
     for line in open('joint_vt_chompy').readlines():
         js = ujson.loads(line)
