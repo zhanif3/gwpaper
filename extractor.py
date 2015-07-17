@@ -109,8 +109,9 @@ def analyze(analysis):
         "_id": ObjectId(analysis["object_id"])
     })
 
-    source_name = sample["source"][0]["name"]
-    if source_name in {"benign", "maltrieve", "novetta"}:
+    source_name = set([name['name'] for name in sample["source"] ])
+    #source_name = sample["source"][0]["name"]
+    if len(source_name.intersection({"benign", "maltrieve", "novetta"})):
         result["source"] = source_name
     else:
         # this sample isn't interesting for us
