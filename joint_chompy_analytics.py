@@ -50,7 +50,7 @@ if __name__ == '__main__':
     for line in open('joint_vt_chompy').readlines():
         js = ujson.loads(line)
         result = {}
-
+# domains have a list of source, in the JS files, find beningin ... on the first call when removing, segregate by source
         for e in js:
             if e['service_name'] == 'chompy':
                 for element in e['results']:
