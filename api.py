@@ -56,6 +56,7 @@ def parse_whois(payload):
     except ValueError:
         print "VALUEERROR"
         return {}
+        
 def check_vt_domain(domain):
     vt_api_key = '592d5f6cfb52135f48e9f2a9720631f7e3023efe8bad8b18961fb7af480e76c0'
 

@@ -46,11 +46,21 @@ def emit(result, fields):
             dat = field+"NAN"
         output.append(dat)
     return output, result['domain']
+
+    
 if __name__ == '__main__':
     for line in open('joint_vt_chompy').readlines():
         js = ujson.loads(line)
         result = {}
 # domains have a list of source, in the JS files, find beningin ... on the first call when removing, segregate by source
+
+# We might need to change this to do a look up on the TLO (Domain) and then pull the chompy and VT analysis_results
+# This way we can limit my the Domains Source. For example we have benign, maltrieve droppers, and then novetta which
+# should be call out Domains
+
+# 
+# I am going to update the chompy_analytics.py file to limit my source. 
+#
         for e in js:
             if e['service_name'] == 'chompy':
                 for element in e['results']:
