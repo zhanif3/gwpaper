@@ -32,9 +32,13 @@ def verify_address(address_dictionary):
 def verify_freemail(email):
     if len(email) == 0:
         return {}
+    domain = email.split('@')[1]
+    if domain == 0:
+        return {}
     else:
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        r = requests.get('http://api.how2doit.de/services/freemail/%s/' %(email), headers=headers)
+        r = requests.get('http://api.how2doit.de/services/freemail/%s/' %(domain), headers=headers)
+
         try:
             return r.json()
         except Exception as e:
