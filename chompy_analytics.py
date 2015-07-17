@@ -95,11 +95,11 @@ if __name__ == '__main__':
                         else:
                             js['downloaded_sample_reputation'] = [-1]
                     else:
-                        print 'RCODE', r['response_code']
+                        print('RCODE', r['response_code'])
                 #if element['subtype'] == 'NS':
                 #    js['total_ns_records'] = js.get('total_ns_records', 0) + 1
                 #    check_vt_ip()
-            keyset.update(dict(flattenDict(js)).keys())
-            print keyset
+            keyset.update(list(dict(flattenDict(js)).keys()))
+            print(keyset)
             #print numpy.mean(numpy.array(js['downloaded_sample_reputation'])), numpy.median(numpy.array(js['downloaded_sample_reputation']))
             #print js['detected_urls_reputation'], js['communicating_sample_reputation'], js['downloaded_sample_reputation']
