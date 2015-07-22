@@ -16,7 +16,7 @@ import sys
 import api
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-from multiprocessing import Pool, Lock
+from multiprocessing import Pool, Lock, TimeoutError
 
 FIELDS_TO_WRITE = ['NS', 'A', 'SOA', 'MX', 'TXT', "total_a_records",
                    "num_asn_peers", "total_unique_peers",
@@ -121,7 +121,9 @@ def analyze(analysis):
     try:
         for element in analysis['results']:
             # Pull DNS Summary information
+
             if element['subtype'] == "DNS Summary":
+                logging.info("domain: {}".format(element['result']))
                 result['domain'] = element['result']
                 result['domain_length'] = len(element['result'])
 
@@ -193,7 +195,7 @@ def main():
                      help="file where to write results in")
     cmd.add_argument("--jobs", "-j", default=multiprocessing.cpu_count(),
                      type=int,
-                     help="file where to write results in")
+                     help="Number of processes to use. Default is number of CPUs")
     cmd.add_argument("--multiprocess", "-m", action="store_true",
                      help="use multiple processes for parallelization")
 
@@ -233,10 +235,15 @@ def main():
 
     if args.multiprocess:
         logging.info("using multiprocessing")
-        with Pool(processes=args.jobs) as pool:
-            pool.map(analyze, to_analyze)
-            pool.close()
-            pool.join()
+        with Pool(processes=args.jobs, maxtasksperchild=100) as pool:
+            try:
+                pool.map_async(analyze, to_analyze).get(timeout=300)
+            except TimeoutError:
+                logging.info("Timeout Error: {}".format(pool))
+                pool.terminate()
+                pool.join()
+            except:
+                logging.info("Unexpected error: {}".format(sys.exc_info()[0]))
 
     else:
         logging.info("using a single thread")
